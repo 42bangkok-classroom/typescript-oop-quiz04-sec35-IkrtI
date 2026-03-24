@@ -1,12 +1,7 @@
-import {
-  Controller,
-  Get,
-  Param,
-  Query,
-  NotFoundException,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { UserService } from './user.service';
-import { IUser } from './user.entity';
+import { IUser } from './user.interface';
+import { CreateUserDto } from './dto/create-user.dto';
 
 @Controller('users')
 export class UserController {
@@ -18,34 +13,20 @@ export class UserController {
   }
 
   @Get(':id')
-  async findOne(
-    @Param('id') id: string,
-    @Query('fields') fields: string = '',
-  ): Promise<unknown> {
-    const users = await this.userService.findAll();
-    const user = users.find((U: IUser) => U.id == id);
-    if (!user) {
-      return new NotFoundException({
-        statusCode: 404,
-        message: 'User not found',
-        error: 'Not Found',
-      });
-    }
-    if (fields) {
-      const fieldList = fields.split(',').map((f) => f.trim());
-      const filteredUser: Record<string, unknown> = {};
-      fieldList.forEach((field) => {
-        if (Object.prototype.hasOwnProperty.call(user, field)) {
-          filteredUser[field] = user[field];
-        }
-      });
-      return filteredUser;
-    }
-    return user;
+  async findOne(@Param('id') id: string, @Query('fields') fields: string = '') {
+    return this.userService.findOne(
+      id,
+      fields.split(',').map((f) => f.trim()),
+    );
   }
 
   @Get('test')
   getTest(): [] {
     return this.userService.getTest();
+  }
+
+  @Post()
+  create(@Body() dto: CreateUserDto) {
+    return this.userService.create(dto);
   }
 }
