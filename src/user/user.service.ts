@@ -1,27 +1,23 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { IUser } from './user.interface';
-import { readFile, writeFile } from 'fs/promises';
+import { readFileSync, writeFileSync } from 'fs';
 import { CreateUserDto } from './dto/create-user.dto';
 
 @Injectable()
 export class UserService {
-  getTest(): [] {
+  test(): [] {
     return [];
   }
 
-  async findAll(): Promise<IUser[]> {
-    return JSON.parse(await readFile('./data/users.json', 'utf-8')) as IUser[];
+  findAll(): IUser[] {
+    return JSON.parse(readFileSync('./data/users.json', 'utf-8')) as IUser[];
   }
 
-  async findOne(id: string, fields?: string[]): Promise<unknown> {
-    const users = await this.findAll();
+  findOne(id: string, fields?: string[]): IUser | Record<string, unknown> {
+    const users = this.findAll();
     const user = users.find((U: IUser) => U.id == id);
     if (!user) {
-      throw new NotFoundException({
-        statusCode: 404,
-        message: 'User not found',
-        error: 'Not Found',
-      });
+      throw new NotFoundException('User not found');
     }
     if (fields) {
       const filteredUser: Record<string, unknown> = {};
@@ -35,18 +31,22 @@ export class UserService {
     return user;
   }
 
-  async create(dto: CreateUserDto): Promise<IUser> {
-    const users = await this.findAll();
-    const NewId = users.sort((a, b) => Number(a.id) - Number(b.id))[0].id + 1;
+  create(dto: CreateUserDto): IUser {
+    const users = this.findAll();
+    const newId = (
+      users.reduce((maxId, user) => Math.max(maxId, Number(user.id)), 0) + 1
+    ).toString();
+
     const newUser: IUser = {
-      id: NewId.toString(),
+      id: newId,
       firstName: dto.firstName,
       lastName: dto.lastName,
       username: dto.username,
       email: dto.email,
     };
+
     users.push(newUser);
-    await writeFile('./data/users.json', JSON.stringify(users));
+    writeFileSync('./data/users.json', JSON.stringify(users, null, 2), 'utf-8');
     return newUser;
   }
 }

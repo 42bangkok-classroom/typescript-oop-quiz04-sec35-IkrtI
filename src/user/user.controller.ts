@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UsePipes,
+  ValidationPipe,
+} from '@nestjs/common';
 import { UserService } from './user.service';
 import { IUser } from './user.interface';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -7,25 +16,30 @@ import { CreateUserDto } from './dto/create-user.dto';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  @Get('test')
+  test(): [] {
+    return this.userService.test();
+  }
+
   @Get()
-  findAll(): Promise<IUser[]> {
+  findAll(): IUser[] {
     return this.userService.findAll();
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string, @Query('fields') fields: string = '') {
-    return this.userService.findOne(
-      id,
-      fields.split(',').map((f) => f.trim()),
-    );
-  }
+  findOne(@Param('id') id: string, @Query('fields') fields?: string) {
+    const selectedFields = fields
+      ? fields
+          .split(',')
+          .map((field) => field.trim())
+          .filter((field) => field.length > 0)
+      : undefined;
 
-  @Get('test')
-  getTest(): [] {
-    return this.userService.getTest();
+    return this.userService.findOne(id, selectedFields);
   }
 
   @Post()
+  @UsePipes(new ValidationPipe())
   create(@Body() dto: CreateUserDto) {
     return this.userService.create(dto);
   }
